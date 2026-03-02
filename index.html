@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>I Never Meant to Hurt You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Jost:wght@200;300;400&family=Pinyon+Script&display=swap" rel="stylesheet"/>
+
+<style>
+/* =============================================
+   ROOT
+   ============================================= */
+:root {
+  --ink:     #09070a;
+  --deep:    #140a18;
+  --violet:  #3d1a5e;
+  --mauve:   #8a4f9e;
+  --rose:    #c8556b;
+  --blush:   #f0d0d8;
+  --gold:    #c9a04a;
+  --cream:   #faf4f0;
+  --muted:   #7a6080;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* =============================================
+   CURSOR
+   ============================================= */
+#cur, #curRing {
+  position: fixed; pointer-events: none; z-index: 99999;
+  transform: translate(-50%,-50%);
+  border-radius: 50%;
+}
+#cur {
+  width: 10px; height: 10px;
+  background: var(--rose);
+  mix-blend-mode: screen;
+  transition: width .3s, height .3s;
+}
+#curRing {
+  width: 36px; height: 36px;
+  border: 1px solid rgba(200,85,107,.4);
+  transition: width .3s, height .3s;
+}
+
+/* =============================================
+   PROGRESS
+   ============================================= */
+#prog {
+  position: fixed; top: 0; left: 0; height: 2px; width: 0%;
+  background: linear-gradient(90deg, var(--violet), var(--rose), var(--gold));
+  z-index: 9000; transition: width .08s;
+}
+
+/* =============================================
+   NAV DOTS
+   ============================================= */
+#nav {
+  position: fixed; right: 1.8rem; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: .7rem;
+  z-index: 800;
+}
+.ndot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  cursor: pointer;
+  transition: background .4s, transform .4s, height .4s;
+}
+.ndot.on { background: var(--rose); transform: scaleY(2.4); border-radius: 3px; }
+
+/* =============================================
+   INTRO SCREEN
+   ============================================= */
+#intro {
+  position: fixed; inset: 0;
+  background: var(--ink);
+  z-index: 9990;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 1.2rem;
+  transition: opacity 1s ease, visibility 1s ease;
+}
+#intro.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.intro-pre {
+  font-size: .65rem; letter-spacing: .5em; text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0; animation: up .7s .4s forwards;
+}
+.intro-word {
+  font-family: 'Pinyon Script', cursive;
+  font-size: clamp(3rem, 9vw, 6rem);
+  color: var(--rose);
+  opacity: 0; animation: up .9s .7s forwards;
+}
+.intro-loader {
+  width: 120px; height: 1px;
+  background: rgba(255,255,255,.08);
+  position: relative; overflow: hidden;
+}
+.intro-loader::after {
+  content: '';
+  position: absolute; left: -100%; top: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, var(--rose), var(--gold));
+  animation: fill 2.6s 1s ease forwards;
+}
+@keyframes fill { to { left: 0; } }
+@keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* =============================================
+   CANVAS
+   ============================================= */
+#bgc {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; opacity: .7;
+}
+
+/* =============================================
+   NOISE
+   ============================================= */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9998;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+  pointer-events: none; mix-blend-mode: overlay;
+}
+
+/* =============================================
+   PANEL SHELL
+   ============================================= */
+.panel {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(5rem,12vw,9rem) clamp(1.5rem,8vw,8rem);
+}
+
+.tag {
+  display: inline-block; font-size: .62rem;
+  letter-spacing: .38em; text-transform: uppercase;
+  color: var(--gold); border-bottom: 1px solid rgba(201,160,74,.25);
+  padding-bottom: .3rem; margin-bottom: 1.4rem;
+}
+.body { font-size: clamp(.95rem,1.7vw,1.12rem); line-height: 2; color: rgba(250,244,240,.65); max-width: 580px; }
+.body p { margin-bottom: 1.3rem; }
+.body em { color: var(--blush); font-style: italic; font-family: 'Playfair Display', serif; }
+.body strong { color: var(--cream); font-weight: 400; }
+
+/* =============================================
+   PANEL 1 — HERO
+   ============================================= */
+#p1 {
+  flex-direction: column; text-align: center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(61,26,94,.5), transparent),
+    radial-gradient(ellipse 40% 30% at 85% 8%, rgba(200,85,107,.12), transparent);
+}
+.h-pre {
+  font-size: .65rem; letter-spacing: .45em; text-transform: uppercase;
+  color: var(--rose); margin-bottom: 2rem;
+  opacity: 0; animation: up .8s .3s forwards;
+}
+.h-main {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3.8rem, 14vw, 11rem);
+  font-weight: 900; line-height: .95;
+  opacity: 0; animation: heroIn 1.1s .5s cubic-bezier(.22,1,.36,1) forwards;
+}
+.h-main .outline { display: block; -webkit-text-stroke: 1.5px var(--rose); color: transparent; }
+.h-main .solid   { display: block; color: var(--cream); }
+@keyframes heroIn {
+  from { opacity:0; transform:translateY(50px) skewY(2deg); }
+  to   { opacity:1; transform:translateY(0) skewY(0); }
+}
+.h-script {
+  font-family: 'Pinyon Script', cursive;
+  font-size: clamp(1.6rem, 4.5vw, 3rem);
+  color: var(--mauve); margin-top: 1.2rem;
+  opacity: 0; animation: up .8s 1s forwards;
+}
+.h-cue {
+  margin-top: 4.5rem;
+  opacity: 0; animation: up .8s 1.5s forwards;
+  display: flex; flex-direction: column; align-items: center;
+  gap: .8rem; color: var(--muted); font-size: .62rem;
+  letter-spacing: .3em; text-transform: uppercase;
+}
+.cue-line {
+  width: 1px; height: 65px;
+  background: linear-gradient(to bottom, var(--rose), transparent);
+  animation: linePulse 2s ease-in-out infinite;
+}
+@keyframes linePulse { 0%,100%{opacity:.3;transform:scaleY(.8)} 50%{opacity:1;transform:scaleY(1)} }
+
+/* =============================================
+   PANEL 2 — THE DISTANCE
+   ============================================= */
+#p2 {
+  background: var(--deep);
+  clip-path: polygon(0 5%,100% 0,100% 95%,0 100%);
+  margin: -2px 0;
+}
+.p2-inner {
+  max-width: 920px; width: 100%;
+  display: grid; grid-template-columns: auto 1fr; gap: 5rem; align-items: center;
+}
+@media(max-width:680px){ .p2-inner{grid-template-columns:1fr;gap:2rem;} }
+.big-num {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(7rem,18vw,14rem);
+  font-weight: 900; line-height: 1;
+  -webkit-text-stroke: 1px rgba(138,79,158,.25);
+  color: transparent; user-select: none;
+}
+.p2-content h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem,3.5vw,2.8rem);
+  font-weight: 700; color: var(--blush);
+  line-height: 1.15; margin-bottom: 1.5rem;
+}
+
+/* =============================================
+   PANEL 3 — THE ARGUMENT / MIXED EMOTIONS
+   ============================================= */
+#p3 {
+  background:
+    linear-gradient(145deg, #100818 0%, #1e0d28 50%, #130a1a 100%);
+  clip-path: polygon(0 0,100% 5%,100% 100%,0 95%);
+  margin: -2px 0;
+}
+.p3-inner { max-width: 860px; width: 100%; }
+.emotion-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.5px; margin: 2.5rem 0;
+  border: 1px solid rgba(138,79,158,.2);
+  border-radius: 2px; overflow: hidden;
+}
+@media(max-width:560px){ .emotion-grid{grid-template-columns:1fr;} }
+.emotion-card {
+  padding: 1.8rem; background: rgba(255,255,255,.025);
+  border: none; transition: background .4s;
+}
+.emotion-card:hover { background: rgba(138,79,158,.07); }
+.ec-icon { font-size: 1.5rem; margin-bottom: .7rem; display: block; }
+.ec-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700; color: var(--blush);
+  margin-bottom: .5rem;
+}
+.ec-body { font-size: .88rem; line-height: 1.8; color: rgba(250,244,240,.5); }
+
+.confession-box {
+  border: 1px solid rgba(200,85,107,.2);
+  border-radius: 2px; padding: 2.2rem; margin: 2rem 0;
+  background: rgba(200,85,107,.04);
+  position: relative;
+}
+.confession-box::before {
+  content: '"';
+  position: absolute; top: -1.5rem; left: 1.5rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 6rem; color: rgba(200,85,107,.15);
+  line-height: 1;
+}
+.confession-box p {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: clamp(1rem,2vw,1.2rem);
+  line-height: 1.85; color: rgba(250,244,240,.75);
+}
+.confession-box p em { color: var(--rose); font-style: normal; }
+
+/* =============================================
+   PANEL 4 — WHAT YOU MEAN TO ME
+   ============================================= */
+#p4 {
+  clip-path: polygon(0 5%,100% 0,100% 95%,0 100%);
+  background: linear-gradient(160deg, #0c0610 0%, #1a0d22 100%);
+  margin: -2px 0;
+}
+.p4-inner { max-width: 860px; width: 100%; }
+.lucky-headline {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem,6vw,5rem);
+  font-weight: 900; line-height: 1;
+  margin-bottom: 2.5rem;
+}
+.lucky-headline .stroke { -webkit-text-stroke: 1.5px var(--mauve); color: transparent; }
+.lucky-headline .fill   { color: var(--cream); }
+.lucky-headline .script { font-style: italic; color: var(--rose); }
+
+.pull-quote {
+  margin: 2.5rem 0;
+  padding: 2rem 2.5rem;
+  background: linear-gradient(135deg, rgba(61,26,94,.3), rgba(200,85,107,.08));
+  border-left: 3px solid var(--rose);
+  border-radius: 0 4px 4px 0;
+}
+.pull-quote p {
+  font-family: 'Pinyon Script', cursive;
+  font-size: clamp(1.5rem,3.5vw,2.3rem);
+  color: var(--blush); line-height: 1.5;
+}
+
+/* =============================================
+   PANEL 5 — PHOTOS
+   ============================================= */
+#p5 {
+  flex-direction: column;
+  background: #f7efe8;
+  clip-path: polygon(0 0,100% 5%,100% 95%,0 100%);
+  margin: -2px 0; color: #1a0a1e;
+}
+#p5 .tag { color: #8a4f9e; border-color: rgba(138,79,158,.25); }
+#p5 h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem,5vw,3.8rem);
+  font-weight: 900; color: #1a0a1e; margin-bottom: .4rem;
+}
+#p5 .sub { color: #8a6070; font-size: .95rem; margin-bottom: 3rem; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(12,1fr);
+  gap: .8rem; max-width: 1060px; width: 100%;
+}
+.gp {
+  background: #e2cdd4; border-radius: 3px;
+  overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: .3rem;
+  color: #9a7080; font-size: .7rem; letter-spacing: .1em;
+  transition: transform .45s cubic-bezier(.22,1,.36,1), box-shadow .4s;
+}
+.gp:hover { transform: scale(1.025) rotate(-.4deg); box-shadow: 0 18px 50px rgba(61,26,94,.18); z-index:5; }
+.gp img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover; }
+.gp .gi { font-size: 1.8rem; }
+.gp .gl { text-align:center; padding: 0 .8rem; font-size: .65rem; line-height: 1.5; }
+.tape {
+  position: absolute; bottom: .7rem; left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  background: rgba(255,250,245,.92); color: #5a3040;
+  font-size: .6rem; letter-spacing: .08em;
+  padding: .2rem .6rem; border-radius: 2px;
+  white-space: nowrap;
+  display: none; /* show when you add real photos */
+}
+.gp:nth-child(1){ grid-column:span 7; grid-row:span 2; aspect-ratio:4/3; }
+.gp:nth-child(2){ grid-column:span 5; aspect-ratio:3/2; }
+.gp:nth-child(3){ grid-column:span 5; aspect-ratio:3/2; }
+.gp:nth-child(4){ grid-column:span 4; grid-row:span 2; aspect-ratio:2/3; }
+.gp:nth-child(5){ grid-column:span 4; aspect-ratio:3/2; }
+.gp:nth-child(6){ grid-column:span 4; aspect-ratio:3/2; }
+@media(max-width:680px){
+  .gallery { grid-template-columns:1fr 1fr; }
+  .gp:nth-child(n){ grid-column:span 1; grid-row:span 1; aspect-ratio:4/3; }
+  .gp:nth-child(1){ grid-column:span 2; }
+}
+
+/* =============================================
+   PANEL 6 — PROMISES
+   ============================================= */
+#p6 {
+  background: var(--ink);
+  clip-path: polygon(0 5%,100% 0,100% 100%,0 100%);
+  margin: -2px 0; flex-direction: column; align-items: flex-start;
+}
+.p6-inner { max-width: 860px; width: 100%; }
+#p6 h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem,5vw,4rem);
+  font-weight: 900; color: var(--cream); margin-bottom: .4rem;
+}
+#p6 .sub { color: var(--muted); font-size: .95rem; max-width: 500px; line-height: 1.8; margin-bottom: 3rem; }
+
+.pm {
+  display: grid; grid-template-columns: 4.5rem 1fr;
+  align-items: start; gap: 1.5rem;
+  padding: 1.8rem 0; border-top: 1px solid rgba(255,255,255,.06);
+  transition: padding .3s;
+}
+.pm:hover { padding-left: .5rem; }
+.pm-n {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.5rem; font-weight: 900;
+  color: rgba(138,79,158,.2); line-height: 1;
+  transition: color .3s; user-select: none;
+}
+.pm:hover .pm-n { color: var(--rose); }
+.pm-c h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700; color: var(--blush); margin-bottom: .4rem;
+}
+.pm-c p { font-size: .9rem; line-height: 1.85; color: rgba(250,244,240,.5); }
+
+/* =============================================
+   PANEL 7 — FINALE
+   ============================================= */
+#p7 {
+  flex-direction: column; text-align: center;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 110%, rgba(61,26,94,.6), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 5%, rgba(200,85,107,.1), transparent),
+    var(--ink);
+  overflow: hidden;
+}
+.f-bg {
+  position: absolute; font-family: 'Playfair Display', serif;
+  font-size: clamp(10rem,30vw,22rem); font-weight: 900; font-style: italic;
+  color: rgba(138,79,158,.04); user-select: none; pointer-events: none;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  white-space: nowrap; z-index: 0;
+}
+.f-eye {
+  font-family: 'Pinyon Script', cursive;
+  font-size: clamp(1.4rem,4vw,2.3rem);
+  color: var(--gold); margin-bottom: 1.5rem; position: relative; z-index: 2;
+}
+.f-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3.5rem,13vw,10rem);
+  font-weight: 900; line-height: .93;
+  position: relative; z-index: 2;
+}
+.f-title .o { display:block; -webkit-text-stroke:1.5px var(--rose); color:transparent; }
+.f-title .s { display:block; color:var(--cream); }
+.f-body {
+  max-width: 500px; font-size: 1rem; line-height: 2.1;
+  color: rgba(250,244,240,.6); margin: 3rem auto;
+  position: relative; z-index: 2;
+}
+.f-body strong { color: var(--blush); font-weight: 400; }
+.f-body em { font-family: 'Playfair Display', serif; font-style: italic; color: var(--rose); }
+
+/* Heart orb */
+.orb-wrap {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 1.3rem;
+}
+.orb {
+  width: 96px; height: 96px;
+  background: radial-gradient(circle at 35% 35%, #df7a94, #7b1c35);
+  border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.6rem;
+  box-shadow: 0 0 0 0 rgba(200,85,107,.4), 0 20px 60px rgba(61,26,94,.5);
+  animation: orbbeat 2.4s ease-in-out infinite;
+  transition: transform .15s;
+}
+.orb:hover { transform: scale(1.08); }
+.orb:active{ transform: scale(.94); }
+@keyframes orbbeat {
+  0%,100%{ box-shadow: 0 0 0 0 rgba(200,85,107,.5), 0 20px 60px rgba(61,26,94,.5); }
+  50%    { box-shadow: 0 0 0 18px rgba(200,85,107,0), 0 20px 80px rgba(200,85,107,.35); }
+}
+#hwords {
+  font-family: 'Pinyon Script', cursive;
+  font-size: 1.9rem; color: var(--rose);
+  min-height: 2.5rem; opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .4s, transform .4s;
+}
+#hwords.on { opacity: 1; transform: translateY(0); }
+
+.f-sign {
+  margin-top: 3rem; position: relative; z-index: 2;
+  font-family: 'Pinyon Script', cursive;
+  font-size: clamp(2rem,5vw,3.2rem); color: var(--gold);
+}
+
+/* =============================================
+   PARTICLES
+   ============================================= */
+.pt {
+  position: fixed; pointer-events: none; border-radius: 50%; z-index: 9000;
+  animation: ptfly var(--d,.8s) ease-out forwards;
+}
+@keyframes ptfly { to{transform:translate(var(--x),var(--y)) scale(0); opacity:0;} }
+
+/* =============================================
+   AUDIO PILL
+   ============================================= */
+#aud {
+  position: fixed; bottom: 1.8rem; left: 2rem; z-index: 600;
+  background: rgba(10,5,14,.85); backdrop-filter: blur(12px);
+  border: 1px solid rgba(138,79,158,.25); border-radius: 3rem;
+  padding: .55rem 1.2rem;
+  display: none; /* change to flex when adding song */
+  align-items: center; gap: .7rem;
+  font-size: .72rem; letter-spacing: .1em;
+  color: rgba(250,244,240,.5); cursor: pointer;
+}
+#aud .aeq { display:flex; align-items:flex-end; gap:2px; height:14px; }
+#aud .aeq span { width:2px; background:var(--rose); border-radius:1px; animation:eqb .55s ease-in-out infinite alternate; }
+#aud .aeq span:nth-child(2){ animation-delay:.15s; }
+#aud .aeq span:nth-child(3){ animation-delay:.3s; }
+@keyframes eqb { from{height:3px} to{height:12px} }
+
+/* =============================================
+   REVEAL UTILITIES
+   ============================================= */
+.rv   { opacity:0; transform:translateY(36px);  transition:opacity .9s,transform .9s; }
+.rvl  { opacity:0; transform:translateX(-36px); transition:opacity .9s,transform .9s; }
+.rvr  { opacity:0; transform:translateX(36px);  transition:opacity .9s,transform .9s; }
+.rv.v, .rvl.v, .rvr.v { opacity:1; transform:translate(0); }
+
+.sg > * { opacity:0; transform:translateY(18px); transition:opacity .7s,transform .7s; }
+.sg.v > *:nth-child(1){ opacity:1;transform:none;transition-delay:.05s; }
+.sg.v > *:nth-child(2){ opacity:1;transform:none;transition-delay:.18s; }
+.sg.v > *:nth-child(3){ opacity:1;transform:none;transition-delay:.31s; }
+.sg.v > *:nth-child(4){ opacity:1;transform:none;transition-delay:.44s; }
+.sg.v > *:nth-child(5){ opacity:1;transform:none;transition-delay:.57s; }
+.sg.v > *:nth-child(6){ opacity:1;transform:none;transition-delay:.70s; }
+
+@media(max-width:480px){ #nav{display:none;} }
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="curRing"></div>
+<div id="prog"></div>
+<canvas id="bgc"></canvas>
+
+<nav id="nav">
+  <div class="ndot on"  onclick="go(0)" title="Beginning"></div>
+  <div class="ndot"     onclick="go(1)" title="The Distance"></div>
+  <div class="ndot"     onclick="go(2)" title="That Night"></div>
+  <div class="ndot"     onclick="go(3)" title="What You Are"></div>
+  <div class="ndot"     onclick="go(4)" title="Memories"></div>
+  <div class="ndot"     onclick="go(5)" title="Promises"></div>
+  <div class="ndot"     onclick="go(6)" title="Please"></div>
+</nav>
+
+<!-- INTRO -->
+<div id="intro">
+  <p class="intro-pre">a message from the heart</p>
+  <p class="intro-word">I never meant to hurt you.</p>
+  <div class="intro-loader"></div>
+</div>
+
+<!-- AUDIO -->
+<div id="aud" onclick="toggleAud()">
+  <span style="color:var(--rose)">♪</span>
+  <span>Our Song</span>
+  <div class="aeq"><span></span><span></span><span></span></div>
+  <audio id="bga" loop><source src="song.mp3" type="audio/mpeg"/></audio>
+</div>
+
+<!-- ============================================================
+     P1 — HERO
+     ============================================================ -->
+<section class="panel" id="p1" data-i="0">
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;">
+    <p class="h-pre">a sincere apology — from me, to you</p>
+    <h1 class="h-main">
+      <span class="outline">I Never</span>
+      <span class="solid">Meant To.</span>
+    </h1>
+    <p class="h-script">I was trying to be understood. I ended up hurting you instead.</p>
+    <div class="h-cue">
+      <span>read this</span>
+      <div class="cue-line"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P2 — THE DISTANCE BETWEEN US
+     ============================================================ -->
+<section class="panel" id="p2" data-i="1">
+  <div class="p2-inner">
+    <div class="big-num rvl">01</div>
+    <div class="rvr">
+      <span class="tag">The hardest part</span>
+      <h2>We're far from each other.<br/>And that makes everything harder.</h2>
+      <div class="body">
+        <p>
+          Distance already takes so much from us — the small moments,
+          the casual touches, being able to look each other in the eye
+          when things go wrong. We don't have those shortcuts.
+        </p>
+        <p>
+          So when words are all we have,
+          <em>they carry more weight than they should.</em>
+          And that night, mine came out wrong.
+          Not because I don't care — but because distance makes it so easy
+          to misread tone, to feel disconnected, to feel like you're talking
+          to a stranger instead of the person who means the most to you.
+        </p>
+        <p>
+          I hate that the miles between us made you feel even further away.
+          That was never what I wanted.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P3 — THAT NIGHT / THE ARGUMENT
+     ============================================================ -->
+<section class="panel" id="p3" data-i="2">
+  <div class="p3-inner">
+    <span class="tag rv">That night</span>
+    <h2 class="rv" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:900;color:var(--blush);line-height:1.1;margin-bottom:2rem;transition-delay:.1s">
+      My emotions got tangled.<br/>
+      <span style="color:var(--rose);font-style:italic;">You paid the price for it.</span>
+    </h2>
+
+    <!-- Emotion grid — what was happening inside him -->
+    <div class="emotion-grid sg">
+      <div class="emotion-card">
+        <span class="ec-icon">💬</span>
+        <div class="ec-title">I just wanted to be heard</div>
+        <p class="ec-body">I was trying to explain myself. To be understood.
+        But the harder I tried, the more it turned into something else entirely.</p>
+      </div>
+      <div class="emotion-card">
+        <span class="ec-icon">🌊</span>
+        <div class="ec-title">My emotions overflowed</div>
+        <p class="ec-body">Everything got tangled — frustration, longing, the exhaustion
+        of distance — and it all came out at once, aimed at the wrong person.</p>
+      </div>
+      <div class="emotion-card">
+        <span class="ec-icon">💔</span>
+        <div class="ec-title">I failed to see you</div>
+        <p class="ec-body">In that moment, I stopped seeing you as my girlfriend —
+        as the person I love. I let the argument swallow that, and that was
+        my biggest mistake.</p>
+      </div>
+      <div class="emotion-card">
+        <span class="ec-icon">🤍</span>
+        <div class="ec-title">It was never my intention</div>
+        <p class="ec-body">Not for a single second did I want to hurt you.
+        The fact that I did — even unintentionally — is something
+        I have to own completely.</p>
+      </div>
+    </div>
+
+    <div class="confession-box rv" style="margin-top:2rem;transition-delay:.3s">
+      <p>
+        "That night, my emotions mixed together in the worst way.
+        I was frustrated. I was missing you. I was trying to make a point —
+        and somewhere in all of that, <em>I stopped recognizing you as my girlfriend.</em>
+        I talked to you like you were just someone to argue with,
+        not the person I love most from a distance.
+        That was wrong. That was entirely, completely wrong.
+        And I am so sorry."
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P4 — WHAT YOU MEAN TO ME
+     ============================================================ -->
+<section class="panel" id="p4" data-i="3">
+  <div class="p4-inner">
+    <span class="tag rv">The truth</span>
+    <h2 class="lucky-headline rv" style="transition-delay:.1s">
+      <span class="stroke">I never felt</span>
+      <span class="fill">lucky</span>
+      <span class="script">until you.</span>
+    </h2>
+
+    <div class="body rv" style="transition-delay:.2s">
+      <p>
+        Before you, I didn't know what it meant to have someone
+        who made ordinary days feel like something worth remembering.
+        <strong>You changed that.</strong> You are what changed that.
+      </p>
+      <p>
+        And I know that makes what happened that night even harder to understand —
+        how could someone who means everything to me get treated like that?
+        I ask myself the same thing. The only answer I have is:
+        <em>I was wrong, and it will not happen again.</em>
+      </p>
+    </div>
+
+    <div class="pull-quote rv" style="transition-delay:.35s">
+      <p>
+        <!-- ✏️ Replace with a real specific memory — one small moment with her you still think about -->
+        "I still think about that time we coffee dated the first time we met in while, and we sat down telling stories at the beach side. You were so cute and happy, and I remember thinking,
+        it was such a small moment, but it meant so much to me."
+      </p>
+    </div>
+
+    <div class="body rv" style="transition-delay:.5s">
+      <p>
+        <em>Please don't let what I said that night convince you
+        that you are anything less than the best part of my life.</em>
+        Those words came from a moment of chaos — not from how I truly see you.
+        Never from that.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P5 — PHOTO MEMORIES
+     ============================================================ -->
+<section class="panel" id="p5" data-i="4">
+  <span class="tag rv">Us, in the moments that matter</span>
+  <h2 class="rv" style="transition-delay:.1s">The ones I carry with me.</h2>
+  <p class="sub rv" style="transition-delay:.2s">Even from far away — especially from far away.</p>
+
+  <div class="gallery sg">
+    <!--
+      ✏️ HOW TO ADD YOUR PHOTOS:
+      1. Create a folder called "images" next to this HTML file
+      2. Put your couple photos inside (photo1.jpg, photo2.jpg, etc.)
+      3. For each .gp block, uncomment the <img> tag and update the filename
+      4. Uncomment the <div class="tape"> and write a small caption
+         — keep them tiny and personal, like notes you'd pass in class
+    -->
+    <div class="gp">
+      <img src="images/photo1.jpg" alt=""/> 
+      <!-- <div class="tape">the beginning of us 🤍</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+    <div class="gp">
+      <img src="images/photo2.jpg" alt=""/> 
+      <!-- <div class="tape">i think about this one a lot</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+    <div class="gp">
+      <img src="images/photo3.jpg" alt=""/> 
+      <!-- <div class="tape">you didn't know i was watching ✨</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+    <div class="gp">
+      <img src="images/photo4.jpg" alt=""/> 
+      <!-- <div class="tape">my favorite version of us</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+    <div class="gp">
+      <img src="images/photo5.jpg" alt=""/> 
+      <!-- <div class="tape">laughing at nothing 🌸</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+    <div class="gp">
+      <img src="images/photo6.jpg" alt=""/> 
+      <!-- <div class="tape">i'm so lucky it's you 💛</div> -->
+      <span class="gi">📷</span><span class="gl">your photo<br/>here</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P6 — PROMISES
+     ============================================================ -->
+<section class="panel" id="p6" data-i="5">
+  <div class="p6-inner">
+    <span class="tag rv">Not just words</span>
+    <h2 class="rv" style="transition-delay:.1s">What I'm actually changing.</h2>
+    <p class="sub rv" style="transition-delay:.2s">
+      An apology without action is just noise. So here is what you can hold me to —
+      real things, not just feelings.
+    </p>
+
+    <div class="sg">
+      <div class="pm">
+        <div class="pm-n">01</div>
+        <div class="pm-c">
+          <h3>I will pause before I speak when I'm overwhelmed.</h3>
+          <p>When my emotions are tangled and I can feel an argument building,
+          I will choose silence over saying something I'll regret.
+          You deserve measured words, not emotional overflow.</p>
+        </div>
+      </div>
+
+      <div class="pm">
+        <div class="pm-n">02</div>
+        <div class="pm-c">
+          <h3>I will always remember who you are to me — even mid-argument.</h3>
+          <p>You are my girlfriend. Not my opponent.
+          No matter how heated things get, I will not lose sight of that again.
+          The moment I stop seeing you as the person I love is the moment
+          I need to stop talking and reset.</p>
+        </div>
+      </div>
+
+      <div class="pm">
+        <div class="pm-n">03</div>
+        <div class="pm-c">
+          <h3>I will close arguments with care, not just words.</h3>
+          <p>Distance means we can't fix things with a hug.
+          So I'll be more intentional — when something is unresolved,
+          I will not let us go to sleep with it hanging there unsaid.</p>
+        </div>
+      </div>
+
+      <div class="pm">
+        <div class="pm-n">04</div>
+        <div class="pm-c">
+          <h3>I will not let you feel unseen again.</h3>
+          <p>That night, I didn't acknowledge you the way you deserved to be acknowledged.
+          From now on — especially when it's hard — I will make sure
+          you feel recognized, respected, and valued.</p>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     P7 — FINALE
+     ============================================================ -->
+<section class="panel" id="p7" data-i="6">
+  <div class="f-bg">Forgive</div>
+
+  <p class="f-eye rv">After everything —</p>
+
+  <h2 class="f-title rv" style="transition-delay:.15s">
+    <span class="o">Please</span>
+    <span class="s">Stay.</span>
+  </h2>
+
+  <p class="f-body rv" style="transition-delay:.35s">
+    I built this because a text message wasn't enough.<br/>
+    You deserved something that shows I actually <strong>sat with this</strong> —
+    that I felt the weight of it, that I replayed it,
+    that I genuinely hate what I did.<br/><br/>
+    We're far apart. I can't show up at your door.
+    I can't fix it with a look or a touch.
+    All I have right now is <em>this</em> — and the hope
+    that you know me well enough to feel how real it is.<br/><br/>
+    <strong>I never felt lucky until I had you in my life.</strong><br/>
+    Please don't let one terrible night take that away from us.
+  </p>
+
+  <div class="orb-wrap rv" style="transition-delay:.55s">
+    <button class="orb" id="orb">❤️</button>
+    <div id="hwords"></div>
+  </div>
+
+  <p class="f-sign rv" style="transition-delay:.75s">
+    <!-- ✏️ Replace with your name or what she calls you -->
+    — [ Jonah ]
+  </p>
+</section>
+
+<!-- ============================================================
+     JS
+     ============================================================ -->
+<script>
+/* ── INTRO ── */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('intro').classList.add('gone');
+    initCanvas();
+  }, 3800);
+});
+
+/* ── CURSOR ── */
+const cur = document.getElementById('cur');
+const ring = document.getElementById('curRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => {
+  mx=e.clientX; my=e.clientY;
+  cur.style.left=mx+'px'; cur.style.top=my+'px';
+});
+(function loop(){
+  rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(loop);
+})();
+document.querySelectorAll('button,.ndot,.gp').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{
+    cur.style.width='18px';cur.style.height='18px';
+    ring.style.width='52px';ring.style.height='52px';
+  });
+  el.addEventListener('mouseleave',()=>{
+    cur.style.width='10px';cur.style.height='10px';
+    ring.style.width='36px';ring.style.height='36px';
+  });
+});
+
+/* ── PROGRESS + NAV ── */
+const panels = document.querySelectorAll('[data-i]');
+const dots   = document.querySelectorAll('.ndot');
+function go(i){ panels[i].scrollIntoView({behavior:'smooth'}); }
+
+window.addEventListener('scroll',()=>{
+  const pct = window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  document.getElementById('prog').style.width=pct+'%';
+
+  panels.forEach((p,i)=>{
+    const r=p.getBoundingClientRect();
+    if(r.top<=window.innerHeight*.5 && r.bottom>=window.innerHeight*.5){
+      dots.forEach(d=>d.classList.remove('on'));
+      if(dots[i]) dots[i].classList.add('on');
+    }
+  });
+});
+
+/* ── SCROLL REVEAL ── */
+const ro = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('v'); });
+},{threshold:.12});
+document.querySelectorAll('.rv,.rvl,.rvr,.sg').forEach(el=>ro.observe(el));
+
+/* ── BOKEH CANVAS ── */
+function initCanvas(){
+  const cv=document.getElementById('bgc');
+  const ctx=cv.getContext('2d');
+  const resize=()=>{ cv.width=window.innerWidth; cv.height=window.innerHeight; };
+  resize(); window.addEventListener('resize',resize);
+
+  const pts=Array.from({length:110},()=>({
+    x:Math.random()*cv.width, y:Math.random()*cv.height,
+    r:Math.random()*2+.3,
+    o:Math.random()*.5+.1,
+    sp:Math.random()*.005+.001,
+    ph:Math.random()*Math.PI*2,
+    hue:Math.random()<.6?'200,85,107':'138,79,158',
+  }));
+
+  (function draw(t){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p=>{
+      const a=p.o*(.5+.5*Math.sin(t*p.sp*60+p.ph));
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.hue},${a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })(0);
+}
+
+/* ── HEART ORB ── */
+const lines=[
+  "I mean every word of this. ❤️",
+  "I'm so sorry. Truly.",
+  "You are not replaceable to me.",
+  "I never meant to hurt you. 🌹",
+  "Please know how much you matter.",
+  "The distance is hard. You make it worth it.",
+  "I was wrong. You were right to feel hurt.",
+  "I love you. That hasn't changed. 💕",
+];
+let hi=0;
+const orb=document.getElementById('orb');
+const hw=document.getElementById('hwords');
+
+orb.addEventListener('click',function(e){
+  hw.classList.remove('on');
+  setTimeout(()=>{ hw.textContent=lines[hi%lines.length]; hw.classList.add('on'); hi++; },100);
+
+  for(let i=0;i<24;i++){
+    const pt=document.createElement('div');
+    pt.className='pt';
+    const angle=Math.random()*Math.PI*2;
+    const dist=60+Math.random()*130;
+    const sz=5+Math.random()*9;
+    const cols=['#c8556b','#8a4f9e','#f0d0d8','#c9a04a','#df7a94','#3d1a5e'];
+    pt.style.cssText=`left:${e.clientX}px;top:${e.clientY}px;width:${sz}px;height:${sz}px;`+
+      `background:${cols[Math.floor(Math.random()*cols.length)]};`+
+      `--x:${Math.cos(angle)*dist}px;--y:${Math.sin(angle)*dist}px;--d:${.55+Math.random()*.55}s;`;
+    document.body.appendChild(pt);
+    setTimeout(()=>pt.remove(),1300);
+  }
+});
+
+/* ── AUDIO ── */
+let audOn=false;
+function toggleAud(){
+  const a=document.getElementById('bga');
+  audOn=!audOn; audOn?a.play():a.pause();
+}
+</script>
+</body>
+</html>
