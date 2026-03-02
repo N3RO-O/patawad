@@ -863,6 +863,14 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('intro').classList.add('gone');
     initCanvas();
+
+    // Auto-play song after intro (triggered by page load interaction)
+    const audio = document.getElementById('bga');
+    audio.volume = 0.5;
+    audio.play().catch(() => {
+        // If browser still blocks it, play on first click anywhere
+        document.addEventListener('click', () => audio.play(), { once: true });
+    });
   }, 3800);
 });
 
